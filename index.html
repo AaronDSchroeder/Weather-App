@@ -1,0 +1,174 @@
+<html lang="en">
+	<head>
+		<script src="https://unpkg.com/vue@next"></script>
+		<title>Weather</title>
+		<link href="style.css" rel="stylesheet">
+		<meta charset="utf-8" />
+
+	</head>
+
+	<body>
+		<div id="app">
+		<div class='black stuff-box'>
+			<h2> {{title}}</h2>
+		</div>
+		<div class='blue stuff-box'>
+			<h1>Your Location</h1>
+			<p v-if="lat == null"> Loading... </p>
+			<p v-else>{{locmessage}}</p>
+		</div>
+		<div class='yellow stuff-box'>
+			<h2>Current Conditions</h2>
+			<p>Current Weather Conditions @ {{datetime}}</p>
+			<p v-if="ctemp == null">Loading...</p>
+			<ul v-else>
+					<li>Currently {{ctemp}}F</li>
+					<li>High {{htemp}}F</li>
+					<li>Low {{ltemp}}F</li>
+					<li>{{weather}}</li>
+					<li>{{humid}}% Humidity</li>
+					<li>{{press}} HPa Pressure</li>
+			<ul>
+		</div>
+		<div>
+			<h1 align='center'>5-Day 3-Hour Forecast<h1>
+				<p align='center'>{{neutral}} Neutral, {{likely}} Likely, {{unlikely}} Unlikely</p>
+			</div>
+		<template v-for="item in forecasts">
+			<div v-if="ctemp == null" class='black stuff-box'>
+				Loading...
+			</div>
+				<div v-else-if="item.state == 0" class='black stuff-box' @click="toggle(item)">
+					<p> Conditions for {{item.date}}</p>
+					<ul>
+							<li>Temperature {{item.temp}}F</li>
+							<li>{{item.weather}}</li>
+							<li>{{item.humid}}% Humidity</li>
+							<li>{{item.press}} HPa Pressure</li>
+					</ul>
+				</div>
+				<div v-else-if="item.state == 1" class='green stuff-box' @click="toggle(item)">
+					<p> Conditions for {{item.date}}</p>
+					<ul>
+							<li>Temperature {{item.temp}}F</li>
+							<li>{{item.weather}}</li>
+							<li>{{item.humid}}% Humidity</li>
+							<li>{{item.press}} HPa Pressure</li>
+					</ul>
+				</div>
+				<div v-else-if="item.state == 2" class='red stuff-box' @click="toggle(item)">
+					<p> Conditions for {{item.date}}</p>
+					<ul>
+							<li>Temperature {{item.temp}}F</li>
+							<li>{{item.weather}}</li>
+							<li>{{item.humid}}% Humidity</li>
+							<li>{{item.press}} HPa Pressure</li>
+					</ul>
+				</div>
+		</template>
+	</div>
+		<script>
+	const app = Vue.createApp({
+
+		data() {
+			return {
+				title: "Vue.js Weather app",
+				ipurl: "http://api.ipstack.com/check",
+				ipapikey: "?access_key=e18aa433c3de05dabcbffd0f53b96a73",
+				lat:null,
+				lon:null,
+				locmessage:null,
+				datetime:null,
+				ctemp:null,
+				htemp:null,
+				ltemp:null,
+				weather:null,
+				humid:null,
+				press:null,
+
+				forecasts:[],
+
+
+
+				neutral: 40,
+				likely: 0,
+				unlikely:0,
+			};
+		},
+
+		created() {
+
+			var url = this.ipurl + this.ipapikey;
+			var cdatetime = Date(Date.now());
+			this.datetime = cdatetime;
+			console.log(this.state);
+			fetch(url)
+								.then(response => response.json())
+								.then(json => {
+	            	let lat;
+	            	let long;
+								console.log(json);
+            		lat = json['latitude'];
+            		long = json['longitude'];
+								this.lat = lat;
+								this.lon = long;
+								this.city = json['city'];
+								this.region = json['region_name'];
+								this.country = json['country_name'];
+								this.locmessage = "You are located in " + json['city'] + ", " + json['region_name'] + ", " + json['country_name'] + " at coordinates (" + lat + ", " + long + ")";
+								let cwUrl = "http://api.openweathermap.org/data/2.5/weather?";
+								let wapi = "fa6a7f79b22f779d3b812a811abc1581";
+								cwUrl = cwUrl + "lat=" + lat + "&lon=" + long + "&units=imperial" +"&appid=" + wapi;
+								fetch(cwUrl)
+            						.then(response => response.json())
+            						.then(json => {
+                          console.log(json);
+													this.ctemp = json['main']['temp'];
+													this.htemp = json['main']['temp_max'];
+													this.ltemp = json['main']['temp_min'];
+													this.weather = json['weather'][0]['description'];
+													this.humid = json['main']['humidity'];
+													this.press = json['main']['pressure'];
+
+													var wUrl = "http://api.openweathermap.org/data/2.5/forecast?";
+
+							            wUrl = wUrl + "lat=" + lat + "&lon=" + long +"&units=imperial" + "&appid=" + wapi;
+
+												fetch(wUrl)
+							            			.then(response => response.json())
+							            			.then(json => {
+							                   		console.log(json);
+																		for(i = 0; i < 40; i++){
+																				this.forecasts.push({date:json['list'][i]['dt_txt'], temp:json['list'][i]['main']['temp'], weather:json['list'][i]['weather'][0]['description'], humid:json['list'][i]['main']['humidity'], press:json['list'][i]['main']['pressure'], state:0});																		}
+																		console.log(this.forecasts[0]);
+																		});
+											  });
+								});
+		},
+		methods:{
+				toggle(item){
+					if(item.state == 0){
+						this.neutral--;
+						this.likely++;
+					}
+					else if(item.state == 1){
+						this.likely--;
+						this.unlikely++;
+					}
+					else if(item.state == 2){
+						this.neutral++;
+						this.unlikely--;
+					}
+					item.state = (item.state + 1)%3;
+				}
+
+		}
+	})
+
+
+	const vm = app.mount('#app');
+
+
+		</script>
+	</body>
+</html>
